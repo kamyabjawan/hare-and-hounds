@@ -56,7 +56,7 @@ export function useRoomRealtime(roomId: string) {
           filter: `id=eq.${roomId}`
         },
         (payload: RealtimePostgresChangesPayload<GameRoom>) => {
-          setRoom(payload.new);
+          setRoom(payload.new as GameRoom);
         }
       )
       .on(
@@ -89,7 +89,7 @@ export function useRoomRealtime(roomId: string) {
         },
         (payload: RealtimePostgresChangesPayload<MoveRow>) => {
           setMoves((currentMoves) =>
-            currentMoves.some((existing) => existing.id === payload.new.id)
+            currentMoves.some((existing) => existing.id === const move = payload.new as MoveRow;  setMoves((currentMoves) =>   currentMoves.some((existing) => existing.id === move.id)     ? currentMoves     : [...currentMoves, move].sort((left, right) => left.move_number - right.move_number) );)
               ? currentMoves
               : [...currentMoves, payload.new].sort((left, right) => left.move_number - right.move_number)
           );
