@@ -10,13 +10,26 @@ type MatchmakingPayload = {
   code: string;
 };
 
+type ApiError = {
+  error: string;
+};
+
+function isApiError(payload: unknown): payload is ApiError {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "error" in payload &&
+    typeof (payload as ApiError).error === "string"
+  );
+}
+
 export function useMatchmaking() {
   const router = useRouter();
   const accessToken = useSessionStore((state) => state.accessToken);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function post<T>(url: string, body: Record<string, unknown>) {
+  async function post<T extends object>(url: string, body: Record<string, unknown>) {
     if (!accessToken) {
       throw new Error("You need to sign in with Telegram first.");
     }
@@ -30,9 +43,15 @@ export function useMatchmaking() {
       body: JSON.stringify(body)
     });
 
-    const payload = (await response.json()) as T | { error: string };
+    const payload = (await response.json()) as T | ApiError;
 
-    if (!response.ok || (typeof payload === "object" && payload !== null && "error" in payload)) {
+    if (isApiError(payload)) {
+      throw new Error(payload.error);
+    }
+
+    if (!response.ok) {
+      throw new Error("Request failed.");
+    }
 
     return payload as T;
   }
