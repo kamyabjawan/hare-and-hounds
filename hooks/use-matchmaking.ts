@@ -32,9 +32,7 @@ export function useMatchmaking() {
 
     const payload = (await response.json()) as T | { error: string };
 
-    if (!response.ok || "error" in payload) {
-      throw new Error("error" in payload ? payload.error : "Request failed.");
-    }
+    if (!response.ok || (typeof payload === "object" && payload !== null && "error" in payload)) {
 
     return payload as T;
   }
