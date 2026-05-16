@@ -79,34 +79,57 @@ export type MatchmakingQueue = {
   updated_at: string;
 };
 
+export type EloEvent = {
+  id: string;
+  room_id: string;
+  profile_id: string;
+  old_elo: number;
+  new_elo: number;
+  delta: number;
+  created_at: string;
+};
+
+type TableDefinition<Row, Insert, Update> = {
+  Row: Row;
+  Insert: Insert;
+  Update: Update;
+  Relationships: [];
+};
+
 export type Database = {
   public: {
     Tables: {
-      profiles: {
-        Row: Profile;
-        Insert: Partial<Profile> & Pick<Profile, "telegram_id" | "first_name">;
-        Update: Partial<Profile>;
-      };
-      game_rooms: {
-        Row: GameRoom;
-        Insert: Partial<GameRoom> & Pick<GameRoom, "created_by" | "positions">;
-        Update: Partial<GameRoom>;
-      };
-      room_players: {
-        Row: RoomPlayer;
-        Insert: RoomPlayer;
-        Update: Partial<RoomPlayer>;
-      };
-      moves: {
-        Row: MoveRow;
-        Insert: Omit<MoveRow, "id" | "created_at"> & { id?: string; created_at?: string };
-        Update: Partial<MoveRow>;
-      };
-      matchmaking_queue: {
-        Row: MatchmakingQueue;
-        Insert: Partial<MatchmakingQueue> & Pick<MatchmakingQueue, "profile_id">;
-        Update: Partial<MatchmakingQueue>;
-      };
+      profiles: TableDefinition<Profile, Partial<Profile> & Pick<Profile, "telegram_id" | "first_name">, Partial<Profile>>;
+      game_rooms: TableDefinition<
+        GameRoom,
+        Partial<GameRoom> & Pick<GameRoom, "created_by" | "positions">,
+        Partial<GameRoom>
+      >;
+      room_players: TableDefinition<RoomPlayer, RoomPlayer, Partial<RoomPlayer>>;
+      moves: TableDefinition<
+        MoveRow,
+        Omit<MoveRow, "id" | "created_at"> & { id?: string; created_at?: string },
+        Partial<MoveRow>
+      >;
+      matchmaking_queue: TableDefinition<
+        MatchmakingQueue,
+        Partial<MatchmakingQueue> & Pick<MatchmakingQueue, "profile_id">,
+        Partial<MatchmakingQueue>
+      >;
+      elo_events: TableDefinition<
+        EloEvent,
+        Omit<EloEvent, "id" | "delta" | "created_at"> & { id?: string; created_at?: string },
+        Partial<EloEvent>
+      >;
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: {
+      game_role: GameRole;
+      room_status: RoomStatus;
+      room_privacy: RoomPrivacy;
+      game_result: GameResult;
+    };
+    CompositeTypes: Record<string, never>;
   };
 };
