@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import type { GameRoom, MoveRow, RoomPlayer } from "@/types/database";
+import type { RealtimePostgresChangesPayload, SupabaseClient } from "@supabase/supabase-js";
+import type { Database, GameRoom, MoveRow } from "@/types/database";
 import { useGameStore } from "@/stores/game-store";
 import { useSupabase } from "@/hooks/use-supabase";
 
@@ -15,14 +15,15 @@ export function useRoomRealtime(roomId: string) {
       return;
     }
 
+    const client: SupabaseClient<Database> = supabase;
     let mounted = true;
     setRealtimeStatus("connecting");
 
     async function loadInitialState() {
       const [roomResult, playersResult, movesResult] = await Promise.all([
-        supabase.from("game_rooms").select("*").eq("id", roomId).single(),
-        supabase.from("room_players").select("*").eq("room_id", roomId),
-        supabase.from("moves").select("*").eq("room_id", roomId).order("move_number", { ascending: true })
+        client.from("game_rooms").select("*").eq("id", roomId).single(),
+        client.from("room_players").select("*").eq("room_id", roomId),
+        client.from("moves").select("*").eq("room_id", roomId).order("move_number", { ascending: true })
       ]);
 
       if (!mounted) {
@@ -44,7 +45,7 @@ export function useRoomRealtime(roomId: string) {
 
     void loadInitialState();
 
-    const channel = supabase
+    const channel = client
       .channel(`room:${roomId}`)
       .on(
         "postgres_changes",
@@ -67,7 +68,7 @@ export function useRoomRealtime(roomId: string) {
           filter: `room_id=eq.${roomId}`
         },
         () => {
-          void supabase
+          void client
             .from("room_players")
             .select("*")
             .eq("room_id", roomId)
@@ -87,7 +88,11 @@ export function useRoomRealtime(roomId: string) {
           filter: `room_id=eq.${roomId}`
         },
         (payload: RealtimePostgresChangesPayload<MoveRow>) => {
-          addMove(payload.new);
+          setMoves((currentMoves) =>
+            currentMoves.some((existing) => existing.id === payload.new.id)
+              ? currentMoves
+              : [...currentMoves, payload.new].sort((left, right) => left.move_number - right.move_number)
+          );
         }
       )
       .subscribe((status) => {
@@ -97,7 +102,7 @@ export function useRoomRealtime(roomId: string) {
     return () => {
       mounted = false;
       setRealtimeStatus("idle");
-      void supabase.removeChannel(channel);
+      void client.removeChannel(channel);
     };
-  }, [addMove, roomId, setMoves, setPlayers, setRealtimeStatus, setRoom, supabase]);
+  }, [roomId, setMoves, setPlayers, setRealtimeStatus, setRoom, supabase]);
 }
