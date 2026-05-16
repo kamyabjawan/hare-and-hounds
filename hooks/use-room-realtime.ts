@@ -8,7 +8,7 @@ import { useSupabase } from "@/hooks/use-supabase";
 
 export function useRoomRealtime(roomId: string) {
   const supabase = useSupabase();
-  const { setRoom, setMoves, setPlayers, addMove, setRealtimeStatus } = useGameStore();
+  const { setRoom, setMoves, setPlayers, setRealtimeStatus } = useGameStore();
 
   useEffect(() => {
     if (!supabase) {
@@ -88,10 +88,12 @@ export function useRoomRealtime(roomId: string) {
           filter: `room_id=eq.${roomId}`
         },
         (payload: RealtimePostgresChangesPayload<MoveRow>) => {
+          const move = payload.new as MoveRow;
+
           setMoves((currentMoves) =>
-            currentMoves.some((existing) => existing.id === const move = payload.new as MoveRow;  setMoves((currentMoves) =>   currentMoves.some((existing) => existing.id === move.id)     ? currentMoves     : [...currentMoves, move].sort((left, right) => left.move_number - right.move_number) );)
+            currentMoves.some((existing) => existing.id === move.id)
               ? currentMoves
-              : [...currentMoves, payload.new].sort((left, right) => left.move_number - right.move_number)
+              : [...currentMoves, move].sort((left, right) => left.move_number - right.move_number)
           );
         }
       )
