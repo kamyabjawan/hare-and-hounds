@@ -26,7 +26,7 @@ export function GameBoard({ room }: GameBoardProps) {
   const board = normalizeBoardState(room.positions);
   const role = profile ? roleForProfile(room, profile.id) : null;
   const activePieceIds: PieceId[] = role === "hare" ? ["hare"] : role === "hounds" ? ["hound-1", "hound-2", "hound-3"] : [];
-  const canMove = room.status === "playing" && room.current_turn === role && !isSubmitting;
+  const canMove = role !== null && room.status === "playing" && room.current_turn === role && !isSubmitting;
   const legalTargets = selectedPiece ? legalMovesForPiece(board, selectedPiece as PieceId) : [];
 
   function pieceNode(piece: PieceId) {
