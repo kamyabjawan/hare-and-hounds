@@ -36,6 +36,8 @@ export function useTelegramAuth() {
       setSession(payload.profile, payload.accessToken);
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Telegram authentication failed.");
+    } finally {
+      setAuthenticating(false);
     }
   }, [accessToken, isAuthenticating, setAuthError, setAuthenticating, setSession, telegram.initData]);
 
@@ -43,7 +45,7 @@ export function useTelegramAuth() {
     if (telegram.initData || process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
       void authenticate();
     }
-  }, [authenticate, telegram.initData]);
+  }, [telegram.initData, authenticate]);
 
   return {
     ...telegram,
