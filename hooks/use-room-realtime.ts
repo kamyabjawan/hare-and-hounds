@@ -56,7 +56,9 @@ export function useRoomRealtime(roomId: string) {
           filter: `id=eq.${roomId}`
         },
         (payload: RealtimePostgresChangesPayload<GameRoom>) => {
-          setRoom(payload.new as GameRoom);
+          if (mounted) {
+            setRoom(payload.new as GameRoom);
+          }
         }
       )
       .on(
@@ -67,16 +69,19 @@ export function useRoomRealtime(roomId: string) {
           table: "room_players",
           filter: `room_id=eq.${roomId}`
         },
-        () => {
-          void client
+        async () => {
+          if (!mounted) {
+            return;
+          }
+
+          const { data } = await client
             .from("room_players")
             .select("*")
-            .eq("room_id", roomId)
-            .then(({ data }) => {
-              if (data) {
-                setPlayers(data);
-              }
-            });
+            .eq("room_id", roomId);
+
+          if (data && mounted) {
+            setPlayers(data);
+          }
         }
       )
       .on(
@@ -88,17 +93,21 @@ export function useRoomRealtime(roomId: string) {
           filter: `room_id=eq.${roomId}`
         },
         (payload: RealtimePostgresChangesPayload<MoveRow>) => {
-          const move = payload.new as MoveRow;
+          if (mounted) {
+            const move = payload.new as MoveRow;
 
-          setMoves((currentMoves) =>
-            currentMoves.some((existing) => existing.id === move.id)
-              ? currentMoves
-              : [...currentMoves, move].sort((left, right) => left.move_number - right.move_number)
-          );
+            setMoves((currentMoves) =>
+              currentMoves.some((existing) => existing.id === move.id)
+                ? currentMoves
+                : [...currentMoves, move].sort((left, right) => left.move_number - right.move_number)
+            );
+          }
         }
       )
       .subscribe((status) => {
-        setRealtimeStatus(status === "SUBSCRIBED" ? "connected" : status === "CHANNEL_ERROR" ? "error" : "connecting");
+        if (mounted) {
+          setRealtimeStatus(status === "SUBSCRIBED" ? "connected" : status === "CHANNEL_ERROR" ? "error" : "connecting");
+        }
       });
 
     return () => {
