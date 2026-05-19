@@ -30,6 +30,26 @@ export function GameBoard({ room }: GameBoardProps) {
   const canMove = role !== null && room.status === "playing" && room.current_turn === role && !isSubmitting;
   const legalTargets = selectedPiece ? legalMovesForPiece(board, selectedPiece as PieceId) : [];
 
+  // Debug logging
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+      console.log("🎮 GameBoard Debug:", {
+        profile_id: profile?.id,
+        room_id: room.id,
+        room_status: room.status,
+        room_current_turn: room.current_turn,
+        hare_player_id: room.hare_player_id,
+        hounds_player_id: room.hounds_player_id,
+        role,
+        canMove,
+        isSubmitting,
+        selectedPiece,
+        activePieceIds,
+        legalTargets: legalTargets.length
+      });
+    }
+  }, [profile, room, role, canMove, isSubmitting, selectedPiece, activePieceIds, legalTargets]);
+
   // Clear selection when turn changes or game state updates
   useEffect(() => {
     setSelectedPiece(null);
@@ -45,6 +65,7 @@ export function GameBoard({ room }: GameBoardProps) {
 
   async function handleNodeClick(node: NodeId) {
     if (!canMove || !selectedPiece) {
+      console.warn("❌ Cannot move:", { canMove, selectedPiece });
       return;
     }
 
@@ -53,8 +74,11 @@ export function GameBoard({ room }: GameBoardProps) {
     if (!legalTargets.includes(node)) {
       haptic("error");
       playSound("error");
+      console.warn("❌ Illegal move target:", node, "Legal targets:", legalTargets);
       return;
     }
+
+    console.log("✅ Submitting move:", { selectedPiece, from, to: node });
 
     const ok = await submitMove(
       {
@@ -70,14 +94,19 @@ export function GameBoard({ room }: GameBoardProps) {
       setSelectedPiece(null);
       haptic("medium");
       playSound("move");
+      console.log("✅ Move accepted");
+    } else {
+      console.error("❌ Move rejected");
     }
   }
 
   function handlePieceClick(piece: PieceId) {
     if (!canMove || !activePieceIds.includes(piece)) {
+      console.warn("❌ Cannot select piece:", { canMove, piece, activePieceIds });
       return;
     }
 
+    console.log("✅ Piece selected:", piece);
     setSelectedPiece(selectedPiece === piece ? null : piece);
     haptic("light");
   }
@@ -157,7 +186,12 @@ export function GameBoard({ room }: GameBoardProps) {
           })}
         </svg>
       </div>
-      {error ? <p className="rounded-lg border border-coral/30 bg-coral/10 p-3 text-sm text-coral">{error}</p> : null}
+      {error ? <p className="rounded-lg border border-coral/30 bg-coral/10 p3 text-sm text-coral">{error}</p> : null}
+      {!canMove && room.status === "playing" && role === null ? (
+        <p className="rounded-lg border border-amber/30 bg-amber/10 p-3 text-sm text-amber">
+          ⚠️ Warning: You are not assigned to this game. Contact support or refresh the page.
+        </p>
+      ) : null}
     </section>
   );
 }
