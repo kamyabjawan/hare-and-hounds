@@ -11,9 +11,11 @@ export function useTelegramAuth() {
 
   const authenticate = useCallback(async () => {
     if (accessToken || isAuthenticating) {
+      console.log("[useTelegramAuth] Skipping auth: accessToken exists or already authenticating");
       return;
     }
 
+    console.log("[useTelegramAuth] Starting authentication...");
     setAuthenticating(true);
 
     try {
@@ -33,16 +35,29 @@ export function useTelegramAuth() {
         throw new Error("error" in payload ? payload.error : "Telegram authentication failed.");
       }
 
+      console.log("[useTelegramAuth] Auth successful!", { username: payload.profile.username });
       setSession(payload.profile, payload.accessToken);
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : "Telegram authentication failed.");
+      const errorMsg = error instanceof Error ? error.message : "Telegram authentication failed.";
+      console.error("[useTelegramAuth] Auth failed:", errorMsg);
+      setAuthError(errorMsg);
     } finally {
       setAuthenticating(false);
     }
   }, [accessToken, isAuthenticating, setAuthError, setAuthenticating, setSession, telegram.initData]);
 
   useEffect(() => {
-    if (telegram.initData || process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+    const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+    const hasInitData = Boolean(telegram.initData);
+    
+    console.log("[useTelegramAuth] useEffect check:", {
+      demoMode,
+      hasInitData,
+      shouldAuth: hasInitData || demoMode,
+      telegram_initData: telegram.initData ? "present" : "missing"
+    });
+
+    if (hasInitData || demoMode) {
       void authenticate();
     }
   }, [telegram.initData, authenticate]);
