@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 import { BOARD_EDGES, BOARD_POINTS, pointFor } from "@/lib/game/board";
 import { legalMovesForPiece, normalizeBoardState, roleForProfile } from "@/lib/game/engine";
 import type { GameRoom } from "@/types/database";
@@ -28,6 +29,11 @@ export function GameBoard({ room }: GameBoardProps) {
   const activePieceIds: PieceId[] = role === "hare" ? ["hare"] : role === "hounds" ? ["hound-1", "hound-2", "hound-3"] : [];
   const canMove = role !== null && room.status === "playing" && room.current_turn === role && !isSubmitting;
   const legalTargets = selectedPiece ? legalMovesForPiece(board, selectedPiece as PieceId) : [];
+
+  // Clear selection when turn changes or game state updates
+  useEffect(() => {
+    setSelectedPiece(null);
+  }, [room.current_turn, room.state_version, setSelectedPiece]);
 
   function pieceNode(piece: PieceId) {
     if (piece === "hare") {
